@@ -6,7 +6,7 @@ If you discover a security vulnerability in this project, please report it respo
 
 **Do NOT open a public GitHub issue for security vulnerabilities.**
 
-Instead, email **security@your-org.com** with:
+Instead, use [GitHub Security Advisories](https://github.com/Krishcalin/SSPM-Tableau/security/advisories/new) or email the repository owner with:
 
 - Description of the vulnerability
 - Steps to reproduce

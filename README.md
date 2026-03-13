@@ -4,7 +4,7 @@
 
 <p align="center">
   <strong>SaaS Security Posture Management for Tableau Cloud</strong><br>
-  <sub>30 security controls &middot; 5 domains &middot; severity-weighted scoring &middot; HTML &amp; JSON reports</sub>
+  <sub>45 security controls &middot; 5 domains &middot; severity-weighted scoring &middot; HTML &amp; JSON reports</sub>
 </p>
 
 <p align="center">
@@ -18,13 +18,13 @@
 
 ## Overview
 
-The **Tableau Cloud SSPM Scanner** connects to a live Tableau Cloud instance via the REST API, collects configuration data (users, groups, projects, data sources, workbooks, flows, site settings), and evaluates **30 security controls** across 5 domains. It produces a severity-weighted posture score (0-100) and generates both JSON and HTML reports with actionable remediation guidance.
+The **Tableau Cloud SSPM Scanner** connects to a live Tableau Cloud instance via the REST API, collects configuration data (users, groups, projects, data sources, workbooks, flows, site settings), and evaluates **45 security controls** across 5 domains. It produces a severity-weighted posture score (0-100) and generates both JSON and HTML reports with actionable remediation guidance.
 
 The scanner is **read-only** -- it never modifies your Tableau Cloud environment. Authentication uses a Personal Access Token (PAT) with the minimum required scope.
 
 ## Security Controls
 
-### Identity & Authentication (AUTH-001 -- AUTH-006)
+### Identity & Authentication (AUTH-001 -- AUTH-009)
 
 | Check ID | Control | Severity |
 |----------|---------|----------|
@@ -34,8 +34,11 @@ The scanner is **read-only** -- it never modifies your Tableau Cloud environment
 | AUTH-004 | Unlicensed / Inactive Viewer Cleanup | LOW |
 | AUTH-005 | Duplicate Admin Account Detection | MEDIUM |
 | AUTH-006 | Authentication Method Consistency | MEDIUM |
+| AUTH-007 | External / Cross-Domain Users | MEDIUM |
+| AUTH-008 | Site Role Distribution Health | MEDIUM |
+| AUTH-009 | Service Account Detection | HIGH |
 
-### Access Control & Permissions (ACCS-001 -- ACCS-006)
+### Access Control & Permissions (ACCS-001 -- ACCS-009)
 
 | Check ID | Control | Severity |
 |----------|---------|----------|
@@ -45,8 +48,11 @@ The scanner is **read-only** -- it never modifies your Tableau Cloud environment
 | ACCS-004 | Guest User Access | MEDIUM |
 | ACCS-005 | Group-Based Access Control | MEDIUM |
 | ACCS-006 | 'All Users' Group Permission Scope | HIGH |
+| ACCS-007 | Derived Permissions Enabled | MEDIUM |
+| ACCS-008 | Project Hierarchy Depth | LOW |
+| ACCS-009 | Single-Owner Content Concentration | MEDIUM |
 
-### Data Security (DATA-001 -- DATA-006)
+### Data Security (DATA-001 -- DATA-009)
 
 | Check ID | Control | Severity |
 |----------|---------|----------|
@@ -56,8 +62,11 @@ The scanner is **read-only** -- it never modifies your Tableau Cloud environment
 | DATA-004 | Data Source Certification Coverage | MEDIUM |
 | DATA-005 | Data Download Surface Area | MEDIUM |
 | DATA-006 | Stale Data Source Detection | MEDIUM |
+| DATA-007 | Remote Query Agent / Bridge Usage | MEDIUM |
+| DATA-008 | Multi-Connection Data Sources | LOW |
+| DATA-009 | Uncertified Sources in Sensitive Projects | HIGH |
 
-### API & Integrations (API-001 -- API-006)
+### API & Integrations (API-001 -- API-009)
 
 | Check ID | Control | Severity |
 |----------|---------|----------|
@@ -67,8 +76,11 @@ The scanner is **read-only** -- it never modifies your Tableau Cloud environment
 | API-004 | Run Now Access Control | LOW |
 | API-005 | Prep Flow Security Review | MEDIUM |
 | API-006 | Content Sprawl Assessment | LOW |
+| API-007 | Stale Flow Detection | MEDIUM |
+| API-008 | Data-Driven Alerts Exposure | LOW |
+| API-009 | Ask Data / Natural Language Mode | MEDIUM |
 
-### Logging & Monitoring (LOG-001 -- LOG-006)
+### Logging & Monitoring (LOG-001 -- LOG-009)
 
 | Check ID | Control | Severity |
 |----------|---------|----------|
@@ -78,6 +90,9 @@ The scanner is **read-only** -- it never modifies your Tableau Cloud environment
 | LOG-004 | Access Review Readiness | HIGH |
 | LOG-005 | Orphaned Content Detection | MEDIUM |
 | LOG-006 | Governed Access Request Workflow | LOW |
+| LOG-007 | Admin Mode Configuration | MEDIUM |
+| LOG-008 | Content Ownership Distribution | MEDIUM |
+| LOG-009 | Site Activation State | HIGH |
 
 ## Architecture
 
@@ -92,8 +107,8 @@ The scanner is **read-only** -- it never modifies your Tableau Cloud environment
                               |
                               v
                    +---------------------+
-                   |  Phase 2: Analyze   |    checks.py
-                   |  (30 controls)      |    SecurityChecks class
+                   |  Phase 2: Analyze   |    checks/ package
+                   |  (45 controls)      |    5 domain suites
                    +---------------------+
                               |
                               v
@@ -103,14 +118,14 @@ The scanner is **read-only** -- it never modifies your Tableau Cloud environment
                    +---------------------+
 ```
 
-| Module | Lines | Purpose |
-|--------|-------|---------|
-| `collector.py` | 230 | REST API data ingestion via `tableauserverclient` SDK |
-| `checks.py` | 852 | 30 security control evaluations |
-| `models.py` | 68 | Shared dataclasses, enums, severity weights |
-| `scoring.py` | 37 | Severity-weighted posture score calculation |
-| `report.py` | 150 | JSON + dark-themed HTML report generation (Jinja2) |
-| `cli.py` | 166 | CLI entrypoint with argparse + env var fallback |
+| Module | Purpose |
+|--------|---------|
+| `collector.py` | REST API data ingestion via `tableauserverclient` SDK (retry, timeout) |
+| `checks/` | 45 security controls across 5 domain modules (ABC base class) |
+| `models.py` | Shared dataclasses, enums, severity weights |
+| `scoring.py` | Severity-weighted posture score calculation |
+| `report.py` | JSON + dark-themed HTML report generation (Jinja2) |
+| `cli.py` | CLI entrypoint with argparse, logging, env var fallback |
 
 ## Prerequisites
 
@@ -220,7 +235,7 @@ The scanner produces two report files in `--output-dir`:
   |-- Running data security checks...
   |-- Running API & integration checks...
   |-- Running logging & monitoring checks...
-  +-- 30 checks completed
+  +-- 45 checks completed
 
 > Phase 3: Scoring & Reporting
   |-- JSON report: ./sspm_output/SSPM-20260313-143022.json
@@ -377,14 +392,15 @@ Tests use pytest with markers:
 
 ### Adding a new check
 
-1. Add a method to `SecurityChecks` in `src/tableau_sspm/checks.py`:
+1. Add a method to the appropriate domain suite in `src/tableau_sspm/checks/`:
 
 ```python
-def _check_my_new_control(self):
-    data = self.data.get("users", [])
+# e.g., in checks/identity.py
+def _check_my_new_control(self) -> None:
+    users = self.data.get("users", [])
     # ... evaluation logic ...
     self._add(
-        check_id="DOMAIN-NNN",
+        check_id="AUTH-NNN",
         name="Human-Readable Name",
         category=Category.IDENTITY,  # IDENTITY, ACCESS, DATA, API, LOGGING
         severity=Severity.HIGH,
@@ -396,7 +412,7 @@ def _check_my_new_control(self):
     )
 ```
 
-2. Call it from `run_all()`
+2. Call it from the suite's `run()` method
 3. Add unit tests in `tests/test_checks.py`
 4. Run `make lint && make test`
 
@@ -416,25 +432,34 @@ def _check_my_new_control(self):
 SSPM-Tableau/
 |-- src/
 |   +-- tableau_sspm/
-|       |-- __init__.py
-|       |-- checks.py        # 30 security control evaluations
-|       |-- cli.py            # CLI entrypoint
-|       |-- collector.py      # REST API data collector
-|       |-- models.py         # Dataclasses, enums, constants
-|       |-- report.py         # JSON + HTML report generation
-|       +-- scoring.py        # Severity-weighted scoring
+|       |-- __init__.py          # Public API exports
+|       |-- checks/              # 45 security controls (modular)
+|       |   |-- __init__.py      # SecurityChecks orchestrator
+|       |   |-- base.py          # BaseChecks ABC
+|       |   |-- identity.py      # AUTH-001 to AUTH-009
+|       |   |-- access.py        # ACCS-001 to ACCS-009
+|       |   |-- data.py          # DATA-001 to DATA-009
+|       |   |-- api.py           # API-001 to API-009
+|       |   +-- logging_checks.py # LOG-001 to LOG-009
+|       |-- cli.py               # CLI entrypoint + logging config
+|       |-- collector.py         # REST API collector (retry, timeout)
+|       |-- models.py            # Dataclasses, enums, constants
+|       |-- report.py            # JSON + HTML report generation
+|       +-- scoring.py           # Severity-weighted scoring
 |-- tests/
-|   |-- conftest.py           # Test fixtures and mock data
-|   |-- test_checks.py        # Security check unit tests
-|   +-- test_scoring.py       # Scoring algorithm tests
-|-- .github/workflows/
-|   |-- ci.yml                # Lint + test + security scan
-|   +-- scan.yml              # Scheduled SSPM scans
-|-- .env.example              # Environment variable template
-|-- Dockerfile                # Container image (non-root)
-|-- Makefile                  # Development task automation
-|-- pyproject.toml            # Package config + tool settings
-+-- requirements.txt          # Production dependencies
+|   |-- conftest.py              # Test fixtures and mock data
+|   |-- test_checks.py           # 58 security check unit tests
+|   +-- test_scoring.py          # Scoring algorithm tests
+|-- .github/
+|   |-- dependabot.yml           # Automated dependency updates
+|   +-- workflows/
+|       |-- ci.yml               # Lint + test + security + pip-audit
+|       +-- scan.yml             # Scheduled SSPM scans
+|-- .env.example                 # Environment variable template
+|-- Dockerfile                   # SHA-pinned image + HEALTHCHECK
+|-- Makefile                     # Development task automation
+|-- pyproject.toml               # Package config + tool settings
++-- requirements.txt             # Production dependencies
 ```
 
 ## Security

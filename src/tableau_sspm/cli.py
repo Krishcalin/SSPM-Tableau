@@ -1,6 +1,9 @@
 """CLI entrypoint for Tableau Cloud SSPM Scanner."""
 
+from __future__ import annotations
+
 import argparse
+import logging
 import os
 import sys
 from dataclasses import asdict
@@ -12,8 +15,40 @@ from .checks import SecurityChecks
 from .scoring import calculate_score
 from .report import generate_json_report, generate_html_report
 
+logger = logging.getLogger(__name__)
 
-def parse_args(argv=None):
+_BANNER = """
+\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557
+\u2551           Tableau Cloud SSPM Scanner                        \u2551
+\u2560\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2563
+\u2551                                                              \u2551
+\u2551  Missing credentials. Provide via CLI args or env vars:      \u2551
+\u2551                                                              \u2551
+\u2551  tableau-sspm \\                                              \u2551
+\u2551    --server  https://your-pod.online.tableau.com \\           \u2551
+\u2551    --site    your-site-name \\                                \u2551
+\u2551    --token-name  your-pat-name \\                             \u2551
+\u2551    --token-secret your-pat-secret                            \u2551
+\u2551                                                              \u2551
+\u2551  Or set environment variables:                               \u2551
+\u2551    TABLEAU_SERVER, TABLEAU_SITE,                             \u2551
+\u2551    TABLEAU_TOKEN_NAME, TABLEAU_TOKEN_SECRET                  \u2551
+\u2551                                                              \u2551
+\u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d
+"""
+
+
+def _configure_logging(verbose: bool = False) -> None:
+    """Set up logging for the CLI."""
+    level = logging.DEBUG if verbose else logging.INFO
+    fmt = "  %(message)s"
+    logging.basicConfig(level=level, format=fmt, stream=sys.stderr)
+    # Silence noisy third-party loggers
+    logging.getLogger("tableauserverclient").setLevel(logging.WARNING)
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Tableau Cloud SSPM — SaaS Security Posture Management Scanner",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -39,43 +74,24 @@ Examples:
                         help="Skip HTML report, output JSON only")
     parser.add_argument("--min-score", type=float, default=0,
                         help="Minimum passing score (exit 1 if below)")
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="Enable debug logging")
     return parser.parse_args(argv)
 
 
-def print_banner():
-    print("""
-╔══════════════════════════════════════════════════════════════╗
-║           Tableau Cloud SSPM Scanner                        ║
-╠══════════════════════════════════════════════════════════════╣
-║                                                              ║
-║  Missing credentials. Provide via CLI args or env vars:      ║
-║                                                              ║
-║  tableau-sspm \\                                              ║
-║    --server  https://your-pod.online.tableau.com \\           ║
-║    --site    your-site-name \\                                ║
-║    --token-name  your-pat-name \\                             ║
-║    --token-secret your-pat-secret                            ║
-║                                                              ║
-║  Or set environment variables:                               ║
-║    TABLEAU_SERVER, TABLEAU_SITE,                             ║
-║    TABLEAU_TOKEN_NAME, TABLEAU_TOKEN_SECRET                  ║
-║                                                              ║
-╚══════════════════════════════════════════════════════════════╝
-""")
-
-
-def main(argv=None):
+def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
+    _configure_logging(verbose=args.verbose)
 
     if not all([args.server, args.site, args.token_name, args.token_secret]):
-        print_banner()
+        print(_BANNER)
         sys.exit(1)
 
     scan_id = f"SSPM-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
     scan_time = datetime.now(timezone.utc).isoformat()
 
     print(f"\n{'─' * 60}")
-    print(f"  Tableau Cloud SSPM Scanner")
+    print("  Tableau Cloud SSPM Scanner")
     print(f"  Scan ID: {scan_id}")
     print(f"{'─' * 60}\n")
 
@@ -85,8 +101,8 @@ def main(argv=None):
     try:
         collector.connect()
         data = collector.collect_all()
-    except Exception as e:
-        print(f"\n  ✗ Connection failed: {e}")
+    except Exception as exc:
+        logger.error("Connection failed: %s", exc)
         sys.exit(1)
     finally:
         collector.disconnect()
@@ -155,10 +171,10 @@ def main(argv=None):
         if f.severity == Severity.CRITICAL and f.status == Status.FAIL
     )
     if critical_fails > 0:
-        print(f"  ⚠  {critical_fails} CRITICAL finding(s) — exit code 1\n")
+        logger.warning("%d CRITICAL finding(s) — exit code 1", critical_fails)
         sys.exit(1)
     if args.min_score and overall_score < args.min_score:
-        print(f"  ⚠  Score {overall_score} below minimum {args.min_score} — exit code 1\n")
+        logger.warning("Score %.1f below minimum %.1f — exit code 1", overall_score, args.min_score)
         sys.exit(1)
 
 

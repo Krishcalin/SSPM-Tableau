@@ -3,7 +3,7 @@
 ## Getting Started
 
 ```bash
-git clone https://github.com/your-org/tableau-sspm.git
+git clone https://github.com/Krishcalin/SSPM-Tableau.git
 cd tableau-sspm
 make dev          # installs package + dev deps + pre-commit hooks
 make test         # runs unit tests

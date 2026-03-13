@@ -32,7 +32,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install -e ".[dev]"
-      - run: pytest -m unit --cov --cov-report=xml
+      - run: pytest -m unit --cov=tableau_sspm --cov-report=xml --cov-fail-under=80
       - name: Upload coverage
         if: matrix.python-version == '3.12'
         uses: actions/upload-artifact@v4
@@ -49,3 +49,13 @@ jobs:
           python-version: "3.12"
       - run: pip install bandit
       - run: bandit -r src/ -ll -ii
+
+  dependency-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e . && pip install pip-audit
+      - run: pip-audit --strict

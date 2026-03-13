@@ -1,20 +1,25 @@
 """Report generation — JSON and HTML outputs."""
 
+from __future__ import annotations
+
 import json
+import logging
 from dataclasses import asdict
 
 from jinja2 import Template
 
 from .models import ScanResult, Severity, Status
 
+logger = logging.getLogger(__name__)
 
-def generate_json_report(result: ScanResult, path: str):
+
+def generate_json_report(result: ScanResult, path: str) -> None:
     with open(path, "w") as f:
         json.dump(asdict(result), f, indent=2, default=str)
-    print(f"  ├─ JSON report: {path}")
+    logger.info("JSON report: %s", path)
 
 
-def generate_html_report(result: ScanResult, path: str):
+def generate_html_report(result: ScanResult, path: str) -> None:
     template = Template(HTML_TEMPLATE)
     html = template.render(
         result=result,
@@ -24,7 +29,7 @@ def generate_html_report(result: ScanResult, path: str):
     )
     with open(path, "w") as f:
         f.write(html)
-    print(f"  ├─ HTML report: {path}")
+    logger.info("HTML report: %s", path)
 
 
 HTML_TEMPLATE = r"""<!DOCTYPE html>

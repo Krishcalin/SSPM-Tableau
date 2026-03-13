@@ -97,7 +97,7 @@
   <!-- Box 1: Controls -->
   <g transform="translate(200, 195)">
     <rect width="120" height="52" rx="8" fill="rgba(99,102,241,0.08)" stroke="rgba(99,102,241,0.15)" stroke-width="1"/>
-    <text x="60" y="24" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="18" font-weight="700" fill="#818cf8">30</text>
+    <text x="60" y="24" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="18" font-weight="700" fill="#818cf8">45</text>
     <text x="60" y="42" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" fill="rgba(255,255,255,0.4)" letter-spacing="0.8" text-transform="uppercase">CONTROLS</text>
   </g>
 
