@@ -1,0 +1,48 @@
+name: Scheduled SSPM Scan
+
+on:
+  schedule:
+    # Run weekly on Monday at 06:00 UTC
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      min_score:
+        description: "Minimum passing posture score (0-100)"
+        required: false
+        default: "0"
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    environment: tableau-cloud
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install scanner
+        run: pip install -e .
+
+      - name: Run SSPM scan
+        env:
+          TABLEAU_SERVER: ${{ secrets.TABLEAU_SERVER }}
+          TABLEAU_SITE: ${{ secrets.TABLEAU_SITE }}
+          TABLEAU_TOKEN_NAME: ${{ secrets.TABLEAU_TOKEN_NAME }}
+          TABLEAU_TOKEN_SECRET: ${{ secrets.TABLEAU_TOKEN_SECRET }}
+        run: |
+          tableau-sspm \
+            --output-dir ./sspm-results \
+            --min-score ${{ github.event.inputs.min_score || '0' }}
+
+      - name: Upload scan results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sspm-report-${{ github.run_number }}
+          path: sspm-results/
+          retention-days: 90

@@ -1,0 +1,100 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tableau-sspm"
+version = "0.1.0"
+description = "SaaS Security Posture Management scanner for Tableau Cloud"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [{ name = "Security Engineering" }]
+keywords = ["tableau", "sspm", "security", "posture", "saas", "cloud"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: System :: Systems Administration",
+]
+dependencies = [
+    "tableauserverclient>=0.30",
+    "jinja2>=3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.4",
+    "mypy>=1.8",
+    "pre-commit>=3.5",
+]
+
+[project.scripts]
+tableau-sspm = "tableau_sspm.cli:main"
+
+[project.urls]
+Repository = "https://github.com/your-org/tableau-sspm"
+Issues = "https://github.com/your-org/tableau-sspm/issues"
+
+# ── Tool Configuration ──────────────────────────────────────
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "S",    # bandit (security)
+    "B",    # bugbear
+    "UP",   # pyupgrade
+    "SIM",  # simplify
+    "T20",  # print detection (disable for CLI tool)
+]
+ignore = [
+    "T201",  # allow print() — this is a CLI tool
+    "S101",  # allow assert in tests
+    "E501",  # line length handled by formatter
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "S106"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-v --tb=short"
+markers = [
+    "unit: fast unit tests (no API calls)",
+    "integration: tests requiring Tableau API access",
+]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+check_untyped_defs = true
+
+[tool.coverage.run]
+source = ["src/tableau_sspm"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 60
